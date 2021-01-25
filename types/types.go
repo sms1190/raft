@@ -1,7 +1,7 @@
 package types
 
 import (
-	"megrec/raft/pb/proto"
+	pb "megrec/raft/pb/proto"
 )
 
 //ArrayFlags for getting list of arguments
@@ -18,7 +18,10 @@ func (i *ArrayFlags) Set(value string) error {
 }
 
 //Peer for storing information about peer nodes
-type Peer struct{
+type Peer struct {
 	ClientConn pb.RaftClient
 	Address string
+	LastLogIndex int64
+	LastCommitIndex int64
+	ID string
 }

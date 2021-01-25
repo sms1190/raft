@@ -20,6 +20,8 @@ type RaftClient interface {
 	AppendEntry(ctx context.Context, in *AppendEntryRequest, opts ...grpc.CallOption) (*AppendEntryResponse, error)
 	RequestVote(ctx context.Context, in *VoteRequest, opts ...grpc.CallOption) (*VoteResponse, error)
 	Ready(ctx context.Context, in *ReadyRequest, opts ...grpc.CallOption) (*ReadyResponse, error)
+	RequestSnapshot(ctx context.Context, in *SnapshotRequest, opts ...grpc.CallOption) (*SnapshotResponse, error)
+	ForwardMessage(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (*ForwardResponse, error)
 }
 
 type raftClient struct {
@@ -57,6 +59,24 @@ func (c *raftClient) Ready(ctx context.Context, in *ReadyRequest, opts ...grpc.C
 	return out, nil
 }
 
+func (c *raftClient) RequestSnapshot(ctx context.Context, in *SnapshotRequest, opts ...grpc.CallOption) (*SnapshotResponse, error) {
+	out := new(SnapshotResponse)
+	err := c.cc.Invoke(ctx, "/pb.Raft/RequestSnapshot", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *raftClient) ForwardMessage(ctx context.Context, in *ForwardRequest, opts ...grpc.CallOption) (*ForwardResponse, error) {
+	out := new(ForwardResponse)
+	err := c.cc.Invoke(ctx, "/pb.Raft/ForwardMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RaftServer is the server API for Raft service.
 // All implementations must embed UnimplementedRaftServer
 // for forward compatibility
@@ -64,6 +84,8 @@ type RaftServer interface {
 	AppendEntry(context.Context, *AppendEntryRequest) (*AppendEntryResponse, error)
 	RequestVote(context.Context, *VoteRequest) (*VoteResponse, error)
 	Ready(context.Context, *ReadyRequest) (*ReadyResponse, error)
+	RequestSnapshot(context.Context, *SnapshotRequest) (*SnapshotResponse, error)
+	ForwardMessage(context.Context, *ForwardRequest) (*ForwardResponse, error)
 	mustEmbedUnimplementedRaftServer()
 }
 
@@ -79,6 +101,12 @@ func (*UnimplementedRaftServer) RequestVote(context.Context, *VoteRequest) (*Vot
 }
 func (*UnimplementedRaftServer) Ready(context.Context, *ReadyRequest) (*ReadyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ready not implemented")
+}
+func (*UnimplementedRaftServer) RequestSnapshot(context.Context, *SnapshotRequest) (*SnapshotResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestSnapshot not implemented")
+}
+func (*UnimplementedRaftServer) ForwardMessage(context.Context, *ForwardRequest) (*ForwardResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ForwardMessage not implemented")
 }
 func (*UnimplementedRaftServer) mustEmbedUnimplementedRaftServer() {}
 
@@ -140,6 +168,42 @@ func _Raft_Ready_Handler(srv interface{}, ctx context.Context, dec func(interfac
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Raft_RequestSnapshot_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SnapshotRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServer).RequestSnapshot(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Raft/RequestSnapshot",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServer).RequestSnapshot(ctx, req.(*SnapshotRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Raft_ForwardMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ForwardRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RaftServer).ForwardMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/pb.Raft/ForwardMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RaftServer).ForwardMessage(ctx, req.(*ForwardRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Raft_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "pb.Raft",
 	HandlerType: (*RaftServer)(nil),
@@ -155,6 +219,14 @@ var _Raft_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ready",
 			Handler:    _Raft_Ready_Handler,
+		},
+		{
+			MethodName: "RequestSnapshot",
+			Handler:    _Raft_RequestSnapshot_Handler,
+		},
+		{
+			MethodName: "ForwardMessage",
+			Handler:    _Raft_ForwardMessage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

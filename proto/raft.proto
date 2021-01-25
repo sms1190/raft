@@ -10,21 +10,26 @@ enum EntryType {
     Commit = 2;
 }
 // append entry request for the term from a leader
-message AppendEntryRequest{
+message AppendEntryRequest {
     int64 term = 1;
     string leader_id = 2;
-    int64 previous_log_index = 3;
-    int64 previous_log_term = 4;
-    int64 commit_index = 5;
-    string entry = 6;
-    EntryType type = 7;
+    int64 last_log_index = 3;
+    int64 commit_index = 4;
+    EntryType type = 5;
+    repeated Entry entries = 6;
+}
+
+message Entry {
+    bytes data = 1;
 }
 
 // append entry successful response
 message AppendEntryResponse{
-    int64 term =1;
+    int64 term = 1;
     bool success = 2;
     string from = 3;
+    int64 current_log_index = 4;
+    int64 current_commit_index = 5;
 }
 
 // contains request for the vote for the term
@@ -46,11 +51,34 @@ message ReadyRequest{
     bool isReady = 1;
 }
 
-message ReadyResponse{
+message ReadyResponse {
     bool ready = 1;
+    string id = 2;
 }
+
+message SnapshotRequest {
+    int64 start_log_index = 1;
+    int64 end_log_index = 2;
+}
+
+message SnapshotResponse {
+    repeated Entry entries = 1;
+    int64 start_log_index = 2;
+    int64 end_log_index = 3;
+}
+
+message ForwardRequest {
+    bytes data = 1;
+}
+
+message ForwardResponse {
+    bool success = 1;
+}
+
 service Raft {
     rpc AppendEntry(AppendEntryRequest) returns (AppendEntryResponse);
     rpc RequestVote(VoteRequest) returns (VoteResponse);
     rpc Ready(ReadyRequest) returns (ReadyResponse);
+    rpc RequestSnapshot(SnapshotRequest) returns (SnapshotResponse);
+    rpc ForwardMessage(ForwardRequest) returns (ForwardResponse);
 }

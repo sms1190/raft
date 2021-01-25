@@ -18,8 +18,8 @@ type RaftServer struct {
 }
 
 //NewRaftServer creates a new raft server
-func NewRaftServer(id string, peers types.ArrayFlags) *RaftServer{
-	node := node.NewNode(id, peers)
+func NewRaftServer(id string, peers types.ArrayFlags, processC chan []byte, commitC chan []byte) *RaftServer{
+	node := node.NewNode(id, peers, processC, commitC)
 	return &RaftServer{
 		Node: node,
 	}
@@ -55,9 +55,18 @@ func (server *RaftServer) AppendEntry(ctx context.Context, ae *pb.AppendEntryReq
 
 //Ready function to let clients know that server is ready to accept other requests too
 func (server *RaftServer) Ready(ctx context.Context, rr *pb.ReadyRequest) (*pb.ReadyResponse, error){
-	if(rr==nil){
+	if rr==nil {
 		return nil, status.Error(codes.NotFound, "Request is empty")
 	}
 	log.Printf("Ready Request received.")
-	return &pb.ReadyResponse{Ready:true}, nil
+	return &pb.ReadyResponse{Ready:true, Id: server.Node.ID }, nil
+}
+
+//ForwardMessage function to handle forward message came from a follower
+func (server *RaftServer) ForwardMessage(ctx context.Context, fr *pb.ForwardRequest) (*pb.ForwardResponse, error){
+	if fr == nil {
+		return nil, status.Error(codes.NotFound, "Request is empty")
+	}
+	log.Printf("Forward request received.")
+	return server.Node.HandleForwardMessage(fr), nil
 }
